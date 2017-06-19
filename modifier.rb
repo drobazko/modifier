@@ -3,7 +3,7 @@ require 'csv'
 require 'date'
 
 def latest(name)
-  files = Dir["#{ ENV["HOME"] }/workspace/*#{name}*.txt"]
+  files = Dir["#{Dir.pwd}/data/*#{name}*.txt"]
 
   files.sort_by! do |file|
     last_date = /\d+-\d+-\d+_[[:alpha:]]+\.txt$/.match file
