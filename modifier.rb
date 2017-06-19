@@ -3,7 +3,7 @@ require 'csv'
 require 'date'
 
 def latest
-  Dir["#{Dir.pwd}/data/project_*_*.txt"]
+  Dir["#{Dir.pwd}/data/project_*_*_performancedata.txt"]
 		.map{|v| v =~ /(\d+-\d+-\d+)\_\D/; { fname: v, date: DateTime.parse($1) } }
 		.sort_by{|v| v[:date]}
 		.last[:fname]
@@ -45,7 +45,8 @@ class Modifier
 		'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'
 	]
 
-	DEFAULT_CSV_OPTIONS = { :col_sep => "\t", :headers => :first_row, :row_sep => "\r\n" }
+	DEFAULT_CSV_OPTIONS = { col_sep: "\t", headers: :first_row }
+	EXTENDED_CSV_OPTIONS = DEFAULT_CSV_OPTIONS.merge({ row_sep: "\r\n" })
 
   LINES_PER_FILE = 120000
 
@@ -79,7 +80,7 @@ class Modifier
     file_index = 0
     file_name = output.gsub('.txt', '')
     while not done do
-		  CSV.open(file_name + "_#{file_index}.txt", 'wb', DEFAULT_CSV_OPTIONS) do |csv|
+		  CSV.open(file_name + "_#{file_index}.txt", 'wb', EXTENDED_CSV_OPTIONS) do |csv|
 			  headers_written = false
         line_count = 0
 			  while line_count < LINES_PER_FILE
@@ -105,6 +106,7 @@ class Modifier
 	def sort(file)
 		output = "#{file}.sorted"
 		content_as_table = parse(file)
+
 		headers = content_as_table.headers
 		index_of_key = headers.index('Clicks')
 		content = content_as_table.sort_by { |a| -a[index_of_key].to_i }
@@ -124,21 +126,27 @@ class Modifier
 
 	def combine_values(hash)
 		LAST_VALUE_WINS.each do |key|
+			next unless hash[key]
 			hash[key] = hash[key].last
 		end
 		LAST_REAL_VALUE_WINS.each do |key|
+			next unless hash[key]
 			hash[key] = hash[key].select {|v| not (v.nil? or v == 0 or v == '0' or v == '')}.last
 		end
 		INT_VALUES.each do |key|
+			next unless (hash[key] && hash[key][0])
 			hash[key] = hash[key][0].to_s
 		end
 		FLOAT_VALUES.each do |key|
+			next unless (hash[key] && hash[key][0])
 			hash[key] = hash[key][0].from_german_to_f.to_german_s
 		end
 		COMISSION_NUMBERS.each do |key|
+			next unless (hash[key] && hash[key][0])
 			hash[key] = (@cancellation_factor * hash[key][0].from_german_to_f).to_german_s
 		end
 		COMISSION_VALUES.each do |key|
+			next unless (hash[key] && hash[key][0])
 			hash[key] = (@cancellation_factor * @saleamount_factor * hash[key][0].from_german_to_f).to_german_s
 		end
 		hash
@@ -163,6 +171,7 @@ class Modifier
 	end
 
 	def parse(file)
+		p file
 		CSV.read(file, DEFAULT_CSV_OPTIONS)
 	end
 
@@ -175,7 +184,7 @@ class Modifier
 	end
 
 	def write(content, headers, output)
-		CSV.open(output, 'wb', DEFAULT_CSV_OPTIONS) do |csv|
+		CSV.open(output, 'wb', EXTENDED_CSV_OPTIONS) do |csv|
 			csv << headers
 			content.each do |row|
 				csv << row
@@ -185,7 +194,6 @@ class Modifier
 end
 
 modified = input = latest
-
 modifier = Modifier.new(saleamount_factor: 1, cancellation_factor: 0.4)
 modifier.modify(modified, input)
 
