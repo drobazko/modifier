@@ -3,7 +3,7 @@ require 'csv'
 require 'date'
 
 def latest
-  p Dir["#{Dir.pwd}/data/project_*_*.txt"]
+  Dir["#{Dir.pwd}/data/project_*_*.txt"]
 		.map{|v| v =~ /(\d+-\d+-\d+)\_\D/; { fname: v, date: DateTime.parse($1) } }
 		.sort_by{|v| v[:date]}
 		.last[:fname]
@@ -45,9 +45,11 @@ class Modifier
 		'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'
 	]
 
+	DEFAULT_CSV_OPTIONS = { :col_sep => "\t", :headers => :first_row, :row_sep => "\r\n" }
+
   LINES_PER_FILE = 120000
 
-	def initialize(saleamount_factor, cancellation_factor)
+	def initialize(saleamount_factor:, cancellation_factor:)
 		@saleamount_factor = saleamount_factor
 		@cancellation_factor = cancellation_factor
 	end
@@ -77,7 +79,7 @@ class Modifier
     file_index = 0
     file_name = output.gsub('.txt', '')
     while not done do
-		  CSV.open(file_name + "_#{file_index}.txt", "wb", { :col_sep => "\t", :headers => :first_row, :row_sep => "\r\n" }) do |csv|
+		  CSV.open(file_name + "_#{file_index}.txt", 'wb', DEFAULT_CSV_OPTIONS) do |csv|
 			  headers_written = false
         line_count = 0
 			  while line_count < LINES_PER_FILE
@@ -98,6 +100,16 @@ class Modifier
         file_index += 1
 		  end
     end
+	end
+
+	def sort(file)
+		output = "#{file}.sorted"
+		content_as_table = parse(file)
+		headers = content_as_table.headers
+		index_of_key = headers.index('Clicks')
+		content = content_as_table.sort_by { |a| -a[index_of_key].to_i }
+		write(content, headers, output)
+		return output
 	end
 
 	private
@@ -150,8 +162,6 @@ class Modifier
 		result
 	end
 
-	DEFAULT_CSV_OPTIONS = { :col_sep => "\t", :headers => :first_row }
-
 	def parse(file)
 		CSV.read(file, DEFAULT_CSV_OPTIONS)
 	end
@@ -165,32 +175,18 @@ class Modifier
 	end
 
 	def write(content, headers, output)
-		CSV.open(output, "wb", { :col_sep => "\t", :headers => :first_row, :row_sep => "\r\n" }) do |csv|
+		CSV.open(output, 'wb', DEFAULT_CSV_OPTIONS) do |csv|
 			csv << headers
 			content.each do |row|
 				csv << row
 			end
 		end
 	end
-
-	public
-	def sort(file)
-		output = "#{file}.sorted"
-		content_as_table = parse(file)
-		headers = content_as_table.headers
-		index_of_key = headers.index('Clicks')
-		content = content_as_table.sort_by { |a| -a[index_of_key].to_i }
-		write(content, headers, output)
-		return output
-	end
 end
 
 modified = input = latest
-puts input
 
-modification_factor = 1
-cancellaction_factor = 0.4
-modifier = Modifier.new(modification_factor, cancellaction_factor)
+modifier = Modifier.new(saleamount_factor: 1, cancellation_factor: 0.4)
 modifier.modify(modified, input)
 
 puts "DONE modifying"
