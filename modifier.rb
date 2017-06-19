@@ -2,20 +2,11 @@ require File.expand_path('lib/combiner',File.dirname(__FILE__))
 require 'csv'
 require 'date'
 
-def latest(name)
-  files = Dir["#{Dir.pwd}/data/*#{name}*.txt"]
-
-  files.sort_by! do |file|
-    last_date = /\d+-\d+-\d+_[[:alpha:]]+\.txt$/.match file
-    last_date = last_date.to_s.match /\d+-\d+-\d+/
-
-    date = DateTime.parse(last_date.to_s)
-    date
-  end
-
-  throw RuntimeError if files.empty?
-
-  files.last
+def latest
+  p Dir["#{Dir.pwd}/data/project_*_*.txt"]
+		.map{|v| v =~ /(\d+-\d+-\d+)\_\D/; { fname: v, date: DateTime.parse($1) } }
+		.sort_by{|v| v[:date]}
+		.last[:fname]
 end
 
 class String
@@ -31,12 +22,28 @@ class Float
 end
 
 class Modifier
-
 	KEYWORD_UNIQUE_ID = 'Keyword Unique ID'
-	LAST_VALUE_WINS = ['Account ID', 'Account Name', 'Campaign', 'Ad Group', 'Keyword', 'Keyword Type', 'Subid', 'Paused', 'Max CPC', 'Keyword Unique ID', 'ACCOUNT', 'CAMPAIGN', 'BRAND', 'BRAND+CATEGORY', 'ADGROUP', 'KEYWORD']
+
+	LAST_VALUE_WINS = [
+		'Account ID', 'Account Name', 'Campaign', 'Ad Group', 'Keyword', 'Keyword Type', 'Subid', 'Paused', 'Max CPC', 
+		'Keyword Unique ID', 'ACCOUNT', 'CAMPAIGN', 'BRAND', 'BRAND+CATEGORY', 'ADGROUP', 'KEYWORD'
+	]
+
 	LAST_REAL_VALUE_WINS = ['Last Avg CPC', 'Last Avg Pos']
-	INT_VALUES = ['Clicks', 'Impressions', 'ACCOUNT - Clicks', 'CAMPAIGN - Clicks', 'BRAND - Clicks', 'BRAND+CATEGORY - Clicks', 'ADGROUP - Clicks', 'KEYWORD - Clicks']
+
+	INT_VALUES = [
+		'Clicks', 'Impressions', 'ACCOUNT - Clicks', 'CAMPAIGN - Clicks', 'BRAND - Clicks', 'BRAND+CATEGORY - Clicks', 
+		'ADGROUP - Clicks', 'KEYWORD - Clicks'
+	]
+
 	FLOAT_VALUES = ['Avg CPC', 'CTR', 'Est EPC', 'newBid', 'Costs', 'Avg Pos']
+
+	COMISSION_NUMBERS = ['number of commissions']
+
+	COMISSION_VALUES = [
+		'Commission Value', 'ACCOUNT - Commission Value', 'CAMPAIGN - Commission Value', 'BRAND - Commission Value', 
+		'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'
+	]
 
   LINES_PER_FILE = 120000
 
@@ -116,10 +123,10 @@ class Modifier
 		FLOAT_VALUES.each do |key|
 			hash[key] = hash[key][0].from_german_to_f.to_german_s
 		end
-		['number of commissions'].each do |key|
+		COMISSION_NUMBERS.each do |key|
 			hash[key] = (@cancellation_factor * hash[key][0].from_german_to_f).to_german_s
 		end
-		['Commission Value', 'ACCOUNT - Commission Value', 'CAMPAIGN - Commission Value', 'BRAND - Commission Value', 'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'].each do |key|
+		COMISSION_VALUES.each do |key|
 			hash[key] = (@cancellation_factor * @saleamount_factor * hash[key][0].from_german_to_f).to_german_s
 		end
 		hash
@@ -178,7 +185,9 @@ class Modifier
 	end
 end
 
-modified = input = latest('project_2012-07-27_2012-10-10_performancedata')
+modified = input = latest
+puts input
+
 modification_factor = 1
 cancellaction_factor = 0.4
 modifier = Modifier.new(modification_factor, cancellaction_factor)
