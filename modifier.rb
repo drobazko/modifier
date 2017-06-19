@@ -45,7 +45,7 @@ class Modifier
 		'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'
 	]
 
-	DEFAULT_CSV_OPTIONS = { col_sep: "\t", headers: :first_row }
+	DEFAULT_CSV_OPTIONS = { col_sep: '|', headers: :first_row }
 	EXTENDED_CSV_OPTIONS = DEFAULT_CSV_OPTIONS.merge({ row_sep: "\r\n" })
 
   LINES_PER_FILE = 120000
