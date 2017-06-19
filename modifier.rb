@@ -1,13 +1,5 @@
-require File.expand_path('lib/combiner',File.dirname(__FILE__))
-require 'csv'
-require 'date'
-
-def latest
-  Dir["#{Dir.pwd}/data/project_*_*_performancedata.txt"]
-    .map{|v| v =~ /(\d+-\d+-\d+)\_\D/; { fname: v, date: DateTime.parse($1) } }
-    .sort_by{|v| v[:date]}
-    .last[:fname]
-end
+require File.expand_path('lib/combiner', File.dirname(__FILE__))
+require File.expand_path('lib/workspace_handler', File.dirname(__FILE__))
 
 class String
   def from_german_to_f
@@ -45,26 +37,17 @@ class Modifier
     'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'
   ]
 
-  DEFAULT_CSV_OPTIONS = { col_sep: '|', headers: :first_row }
-  EXTENDED_CSV_OPTIONS = DEFAULT_CSV_OPTIONS.merge({ row_sep: "\r\n" })
-
-  LINES_PER_FILE = 120000
-
   def initialize(saleamount_factor:, cancellation_factor:)
     @saleamount_factor = saleamount_factor
     @cancellation_factor = cancellation_factor
   end
 
-  def modify(output, input)
-    input = sort(input)
-
-    input_enumerator = lazy_read(input)
-
+  def proceed(input_enumerator)
     combiner = Combiner.new do |value|
       value[KEYWORD_UNIQUE_ID]
     end.combine(input_enumerator)
 
-    merger = Enumerator.new do |yielder|
+    Enumerator.new do |yielder|
       while true
         begin
           list_of_rows = combiner.next
@@ -75,43 +58,6 @@ class Modifier
         end
       end
     end
-
-    done = false
-    file_index = 0
-    file_name = output.gsub('.txt', '')
-    while not done do
-      CSV.open(file_name + "_#{file_index}.txt", 'wb', EXTENDED_CSV_OPTIONS) do |csv|
-        headers_written = false
-        line_count = 0
-        while line_count < LINES_PER_FILE
-          begin
-            merged = merger.next
-            if not headers_written
-              csv << merged.keys
-              headers_written = true
-              line_count +=1
-            end
-            csv << merged
-            line_count +=1
-          rescue StopIteration
-            done = true
-            break
-          end
-        end
-        file_index += 1
-      end
-    end
-  end
-
-  def sort(file)
-    output = "#{file}.sorted"
-    content_as_table = parse(file)
-
-    headers = content_as_table.headers
-    index_of_key = headers.index('Clicks')
-    content = content_as_table.sort_by { |a| -a[index_of_key].to_i }
-    write(content, headers, output)
-    return output
   end
 
   private
@@ -169,32 +115,10 @@ class Modifier
     end
     result
   end
-
-  def parse(file)
-    p file
-    CSV.read(file, DEFAULT_CSV_OPTIONS)
-  end
-
-  def lazy_read(file)
-    Enumerator.new do |yielder|
-      CSV.foreach(file, DEFAULT_CSV_OPTIONS) do |row|
-        yielder.yield(row)
-      end
-    end
-  end
-
-  def write(content, headers, output)
-    CSV.open(output, 'wb', EXTENDED_CSV_OPTIONS) do |csv|
-      csv << headers
-      content.each do |row|
-        csv << row
-      end
-    end
-  end
 end
 
-modified = input = latest
+workspace = WorkspaceHandler.new
 modifier = Modifier.new(saleamount_factor: 1, cancellation_factor: 0.4)
-modifier.modify(modified, input)
-
+modified_data = modifier.proceed( workspace.latest_file.sort.lazy_read )
+workspace.output_with_pagination modified_data
 puts "DONE modifying"
