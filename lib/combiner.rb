@@ -5,22 +5,20 @@
 # output:
 # - enumerator for the combined elements
 class Combiner
-
 	def initialize(&key_extractor)
 		@key_extractor = key_extractor
 	end
 
 	def key(value)
-		value.nil? ? nil : @key_extractor.call(value)
+		value && @key_extractor.call(value)
 	end
 
 	def combine(*enumerators)
 		Enumerator.new do |yielder|
 			last_values = Array.new(enumerators.size)
-			done = enumerators.all? { |enumerator| enumerator.nil? }
-			while not done
+			while not enumerators.all?(&:nil?)
 				last_values.each_with_index do |value, index|
-					if value.nil? and not enumerators[index].nil?
+					if value.nil? and enumerators[index]
 						begin
 							last_values[index] = enumerators[index].next
 						rescue StopIteration
@@ -29,19 +27,9 @@ class Combiner
 					end
 				end
 
-				done = enumerators.all? { |enumerator| enumerator.nil? } and last_values.compact.empty?
+				done = enumerators.all?(&:nil?) and last_values.compact.empty?
 				unless done
-					min_key = last_values.map { |e| key(e) }.min do |a, b|
-						if a.nil? and b.nil?
-							0
-						elsif a.nil?
-							1
-						elsif b.nil?
-							-1
-						else
-							a <=> b
-						end
-					end
+					min_key = last_values.map { |e| key(e) }.compact.min
 					values = Array.new(last_values.size)
 					last_values.each_with_index do |value, index|
 						if key(value) == min_key
