@@ -6,13 +6,16 @@ class WorkspaceHandler
   LINES_PER_FILE = 120000
   BASE_FOLDER = "#{Dir.pwd}/data"
 
-  def initialize(file_name_template, index_column = 'Clicks')
+  attr_reader :file_path
+
+  def initialize(file_name_template, base_folder = BASE_FOLDER, index_column = 'Clicks')
     @index_column = index_column
     @file_name_template = file_name_template
+    @base_folder = base_folder
   end
 
   def latest_file
-    @file_path = Dir["#{BASE_FOLDER}/#{@file_name_template}"]
+    @file_path = Dir["#{@base_folder}/#{@file_name_template}"]
       .map{|v| v =~ /(\d+-\d+-\d+)\_\D/; { fname: v, date: DateTime.parse($1) } }
       .sort_by{|v| v[:date]}
       .last[:fname]
@@ -77,8 +80,6 @@ class WorkspaceHandler
       end
     end
   end
-
-  private
 
   def base_file_path
     @file_path.gsub(/\.txt|\.sorted/, '')
