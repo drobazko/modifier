@@ -26,8 +26,8 @@ class Modifier
     ]
   end
 
-  def proceed(input_enumerator)
-    combiner = Combiner.new { |value| value[KEYWORD_UNIQUE_ID] }.combine(input_enumerator)
+  def proceed(*input_enumerator)
+    combiner = Combiner.new { |value| value[KEYWORD_UNIQUE_ID] }.combine(*input_enumerator)
 
     Enumerator.new do |yielder|
       while true
@@ -49,7 +49,7 @@ class Modifier
   end
 
   def combine_values(hash)
-    hash.map{ |k, v| [ k, find_rule(k).apply(v) ] }.to_h
+    hash.map{ |k, v| [ k, find_rule(k).apply(v.compact) ] }.to_h
   end
 
   def combine_hashes(list_of_rows)
@@ -70,9 +70,3 @@ class Modifier
     result
   end
 end
-
-workspace = WorkspaceHandler.new
-modifier = Modifier.new(saleamount_factor: 1, cancellation_factor: 0.4)
-modified_data = modifier.proceed( workspace.latest_file.sort.lazy_read )
-workspace.output_with_pagination modified_data
-puts "DONE modifying"

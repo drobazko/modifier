@@ -4,14 +4,15 @@ require 'date'
 class WorkspaceHandler
   DEFAULT_CSV_OPTIONS = { col_sep: '|', headers: :first_row }
   LINES_PER_FILE = 120000
+  BASE_FOLDER = "#{Dir.pwd}/data"
 
-  def initialize(base_folder: "#{Dir.pwd}/data", index_column: 'Clicks')
-    @base_folder = base_folder
+  def initialize(file_name_template, index_column = 'Clicks')
     @index_column = index_column
+    @file_name_template = file_name_template
   end
 
   def latest_file
-    @file_path = Dir["#{@base_folder}/project_*_*_performancedata.txt"]
+    @file_path = Dir["#{BASE_FOLDER}/#{@file_name_template}"]
       .map{|v| v =~ /(\d+-\d+-\d+)\_\D/; { fname: v, date: DateTime.parse($1) } }
       .sort_by{|v| v[:date]}
       .last[:fname]
@@ -42,7 +43,6 @@ class WorkspaceHandler
   def sort
     output = "#{@file_path}.sorted"
     content_as_table = parse(@file_path)
-
     headers = content_as_table.headers
     index_of_key = headers.index(@index_column)
     content = content_as_table.sort_by { |a| -a[index_of_key].to_i }

@@ -1,2 +1,2 @@
 # to run the script
-ruby modifier.rb
+ruby runner.rb
