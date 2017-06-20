@@ -58,7 +58,8 @@ class WorkspaceHandler
     done = false
     file_index = 0
     while not done do
-      CSV.open("#{base_file_path}_#{file_index}.txt", 'wb', DEFAULT_CSV_OPTIONS) do |csv|
+      sorted_file = "#{sorted_file_path}_#{file_index}.txt"
+      CSV.open(sorted_file, 'wb', DEFAULT_CSV_OPTIONS) do |csv|
         headers_written = false
         line_count = 0
         while line_count < LINES_PER_FILE
@@ -79,9 +80,11 @@ class WorkspaceHandler
         file_index += 1
       end
     end
+    File.delete(sorted_file) if File.size(sorted_file).zero?
   end
 
-  def base_file_path
+
+  def sorted_file_path
     @file_path.gsub(/\.txt|\.sorted/, '')
   end
 end
