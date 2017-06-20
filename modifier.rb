@@ -13,39 +13,78 @@ class Float
   end
 end
 
+class ValueWinRule
+  def apply(val)
+    val.last
+  end
+end
+
+class RealWinRule
+  def apply(val)
+    val.select {|v| not (v.nil? or v == 0 or v == '0' or v == '')}.last
+  end
+end
+
+class IntRule
+  def apply(val)
+    val[0].to_s
+  end
+end
+
+class FloatRule
+  def apply(val)
+    val[0].from_german_to_f.to_german_s
+  end
+end
+
+class ComissionNumberRule
+  def initialize(cancellation_factor)
+    @cancellation_factor = cancellation_factor
+  end
+
+  def apply(val)
+    (@cancellation_factor * val[0].from_german_to_f).to_german_s
+  end
+end 
+
+class ComissionValueRules
+  def initialize(multiplied_factor)
+    @multiplied_factor = multiplied_factor
+  end
+
+  def apply(val)
+    (@multiplied_factor * val[0].from_german_to_f).to_german_s 
+  end
+end
+
 class Modifier
   KEYWORD_UNIQUE_ID = 'Keyword Unique ID'
-
-  LAST_VALUE_WINS = [
-    'Account ID', 'Account Name', 'Campaign', 'Ad Group', 'Keyword', 'Keyword Type', 'Subid', 'Paused', 'Max CPC', 
-    'Keyword Unique ID', 'ACCOUNT', 'CAMPAIGN', 'BRAND', 'BRAND+CATEGORY', 'ADGROUP', 'KEYWORD'
-  ]
-
+  LAST_VALUE_WINS = ['Account ID', 'Account Name', 'Campaign', 'Ad Group', 'Keyword', 'Keyword Type', 'Subid', 'Paused', 'Max CPC', 
+    'Keyword Unique ID', 'ACCOUNT', 'CAMPAIGN', 'BRAND', 'BRAND+CATEGORY', 'ADGROUP', 'KEYWORD']
   LAST_REAL_VALUE_WINS = ['Last Avg CPC', 'Last Avg Pos']
-
-  INT_VALUES = [
-    'Clicks', 'Impressions', 'ACCOUNT - Clicks', 'CAMPAIGN - Clicks', 'BRAND - Clicks', 'BRAND+CATEGORY - Clicks', 
-    'ADGROUP - Clicks', 'KEYWORD - Clicks'
-  ]
-
+  INT_VALUES = ['Clicks', 'Impressions', 'ACCOUNT - Clicks', 'CAMPAIGN - Clicks', 'BRAND - Clicks', 'BRAND+CATEGORY - Clicks', 
+    'ADGROUP - Clicks', 'KEYWORD - Clicks']
   FLOAT_VALUES = ['Avg CPC', 'CTR', 'Est EPC', 'newBid', 'Costs', 'Avg Pos']
-
   COMISSION_NUMBERS = ['number of commissions']
-
-  COMISSION_VALUES = [
-    'Commission Value', 'ACCOUNT - Commission Value', 'CAMPAIGN - Commission Value', 'BRAND - Commission Value', 
-    'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'
-  ]
+  COMISSION_VALUES = ['Commission Value', 'ACCOUNT - Commission Value', 'CAMPAIGN - Commission Value', 'BRAND - Commission Value', '
+      BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value']
 
   def initialize(saleamount_factor:, cancellation_factor:)
     @saleamount_factor = saleamount_factor
     @cancellation_factor = cancellation_factor
+
+    @rules = [
+      [ LAST_VALUE_WINS, ValueWinRule.new ],
+      [ LAST_REAL_VALUE_WINS, RealWinRule.new ],
+      [ INT_VALUES, IntRule.new ],
+      [ FLOAT_VALUES, FloatRule.new ],
+      [ COMISSION_NUMBERS, ComissionNumberRule.new(@cancellation_factor) ],
+      [ COMISSION_VALUES, ComissionValueRules.new(@cancellation_factor * @saleamount_factor) ]
+    ]
   end
 
   def proceed(input_enumerator)
-    combiner = Combiner.new do |value|
-      value[KEYWORD_UNIQUE_ID]
-    end.combine(input_enumerator)
+    combiner = Combiner.new { |value| value[KEYWORD_UNIQUE_ID] }.combine(input_enumerator)
 
     Enumerator.new do |yielder|
       while true
@@ -63,39 +102,15 @@ class Modifier
   private
 
   def combine(merged)
-    result = []
-    merged.each do |_, hash|
-      result << combine_values(hash)
-    end
-    result
+    merged.map{|_, hash| combine_values(hash) }
+  end
+
+  def find_rule(key)
+    @rules.find{ |rule| rule[0].include?(key) }[1]
   end
 
   def combine_values(hash)
-    LAST_VALUE_WINS.each do |key|
-      next unless hash[key]
-      hash[key] = hash[key].last
-    end
-    LAST_REAL_VALUE_WINS.each do |key|
-      next unless hash[key]
-      hash[key] = hash[key].select {|v| not (v.nil? or v == 0 or v == '0' or v == '')}.last
-    end
-    INT_VALUES.each do |key|
-      next unless (hash[key] && hash[key][0])
-      hash[key] = hash[key][0].to_s
-    end
-    FLOAT_VALUES.each do |key|
-      next unless (hash[key] && hash[key][0])
-      hash[key] = hash[key][0].from_german_to_f.to_german_s
-    end
-    COMISSION_NUMBERS.each do |key|
-      next unless (hash[key] && hash[key][0])
-      hash[key] = (@cancellation_factor * hash[key][0].from_german_to_f).to_german_s
-    end
-    COMISSION_VALUES.each do |key|
-      next unless (hash[key] && hash[key][0])
-      hash[key] = (@cancellation_factor * @saleamount_factor * hash[key][0].from_german_to_f).to_german_s
-    end
-    hash
+    hash.map{ |k, v| [ k, find_rule(k).apply(v) ] }.to_h
   end
 
   def combine_hashes(list_of_rows)

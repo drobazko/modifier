@@ -3,7 +3,6 @@ require 'date'
 
 class WorkspaceHandler
   DEFAULT_CSV_OPTIONS = { col_sep: '|', headers: :first_row }
-  EXTENDED_CSV_OPTIONS = DEFAULT_CSV_OPTIONS.merge({ row_sep: "\r\n" })
   LINES_PER_FILE = 120000
 
   def initialize(base_folder: "#{Dir.pwd}/data", index_column: 'Clicks')
@@ -32,7 +31,7 @@ class WorkspaceHandler
   end
 
   def write(content, headers, file_path)
-    CSV.open(file_path, 'wb', EXTENDED_CSV_OPTIONS) do |csv|
+    CSV.open(file_path, 'wb', DEFAULT_CSV_OPTIONS) do |csv|
       csv << headers
       content.each do |row|
         csv << row
@@ -56,7 +55,7 @@ class WorkspaceHandler
     done = false
     file_index = 0
     while not done do
-      CSV.open("#{base_file_path}_#{file_index}.txt", 'wb', EXTENDED_CSV_OPTIONS) do |csv|
+      CSV.open("#{base_file_path}_#{file_index}.txt", 'wb', DEFAULT_CSV_OPTIONS) do |csv|
         headers_written = false
         line_count = 0
         while line_count < LINES_PER_FILE
