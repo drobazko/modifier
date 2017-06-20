@@ -64,7 +64,7 @@ class Modifier
     keys.each do |key|
       result[key] = []
       list_of_rows.each do |row|
-        result[key] << (row.nil? ? nil : row[key])
+        result[key] << (row && row[key])
       end
     end
     result
