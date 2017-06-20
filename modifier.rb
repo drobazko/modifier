@@ -53,15 +53,10 @@ class Modifier
   end
 
   def combine_hashes(list_of_rows)
-    keys = []
-    list_of_rows.each do |row|
-      next if row.nil?
-      row.headers.each do |key|
-        keys << key
-      end
-    end
     result = {}
-    keys.each do |key|
+    list_of_rows
+      .compact
+      .reduce([]){|acc, v| acc + v.headers }.uniq.each do |key|
       result[key] = []
       list_of_rows.each do |row|
         result[key] << (row && row[key])
