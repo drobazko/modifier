@@ -1,61 +1,4 @@
-require File.expand_path('lib/combiner', File.dirname(__FILE__))
-require File.expand_path('lib/workspace_handler', File.dirname(__FILE__))
-
-class String
-  def from_german_to_f
-    self.gsub(',', '.').to_f
-  end
-end
-
-class Float
-  def to_german_s
-    self.to_s.gsub('.', ',')
-  end
-end
-
-class ValueWinRule
-  def apply(val)
-    val.last
-  end
-end
-
-class RealWinRule
-  def apply(val)
-    val.select {|v| not (v.nil? or v == 0 or v == '0' or v == '')}.last
-  end
-end
-
-class IntRule
-  def apply(val)
-    val[0].to_s
-  end
-end
-
-class FloatRule
-  def apply(val)
-    val[0].from_german_to_f.to_german_s
-  end
-end
-
-class ComissionNumberRule
-  def initialize(cancellation_factor)
-    @cancellation_factor = cancellation_factor
-  end
-
-  def apply(val)
-    (@cancellation_factor * val[0].from_german_to_f).to_german_s
-  end
-end 
-
-class ComissionValueRules
-  def initialize(multiplied_factor)
-    @multiplied_factor = multiplied_factor
-  end
-
-  def apply(val)
-    (@multiplied_factor * val[0].from_german_to_f).to_german_s 
-  end
-end
+Dir['./lib/*.rb', './lib/rules/*.rb'].each {|f| require f }
 
 class Modifier
   KEYWORD_UNIQUE_ID = 'Keyword Unique ID'
@@ -79,7 +22,7 @@ class Modifier
       [ INT_VALUES, IntRule.new ],
       [ FLOAT_VALUES, FloatRule.new ],
       [ COMISSION_NUMBERS, ComissionNumberRule.new(@cancellation_factor) ],
-      [ COMISSION_VALUES, ComissionValueRules.new(@cancellation_factor * @saleamount_factor) ]
+      [ COMISSION_VALUES, ComissionValueRule.new(@cancellation_factor * @saleamount_factor) ]
     ]
   end
 
