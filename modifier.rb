@@ -57,11 +57,11 @@ class Modifier
     list_of_rows
       .compact
       .reduce([]){|acc, v| acc + v.headers }.uniq.each do |key|
-      result[key] = []
-      list_of_rows.each do |row|
-        result[key] << (row && row[key])
+        result[key] = []
+        list_of_rows.each do |row|
+          result[key] << (row && row[key])
+        end
       end
-    end
     result
   end
 end
