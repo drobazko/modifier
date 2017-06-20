@@ -101,10 +101,6 @@ class Modifier
 
   private
 
-  def combine(merged)
-    merged.map{|_, hash| combine_values(hash) }
-  end
-
   def find_rule(key)
     @rules.find{ |rule| rule[0].include?(key) }[1]
   end
