@@ -1,18 +1,6 @@
 require File.expand_path('spec_helper', File.dirname(__FILE__))
 require 'combiner'
 
-def read_from_enumerator(enumerator)
-  result = []
-  loop do
-    begin
-      result << enumerator.next
-    rescue StopIteration
-      break
-    end
-  end
-  result
-end
-
 RSpec::Matchers.define :be_empty do
   match do |enumerator|
   read_from_enumerator(enumerator).empty?

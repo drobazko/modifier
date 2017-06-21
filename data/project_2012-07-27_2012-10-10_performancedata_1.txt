@@ -1,2 +1,0 @@
-Keyword Unique ID|Account ID|Account Name|Last Avg CPC|Clicks|Impressions|Avg CPC|CTR|number of commissions|Commission Value
-1|acc#1|an#1|cpc#1|10|100|10,1|10,5|400,04|40,120000000000005

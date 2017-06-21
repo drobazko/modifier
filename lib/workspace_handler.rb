@@ -83,7 +83,6 @@ class WorkspaceHandler
     File.delete(sorted_file) if File.size(sorted_file).zero?
   end
 
-
   def sorted_file_path
     @file_path.gsub(/\.txt|\.sorted/, '')
   end

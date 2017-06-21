@@ -1,2 +1,5 @@
 Keyword Unique ID|Account ID|Account Name|Last Avg CPC|Clicks|Impressions|Avg CPC|CTR|number of commissions|Commission Value|Costs
-2|acc#2|an#2|cpc#2|20|200|20,2|20,5|800,04|80,12|10000,0
+2|acc#2|an#2|cpc#2|20|200|120,2|120,5|800,04|80,12|10000,0
+3|acc#3|an#3|cpc#3|30|300|30,3|30,5|1200,04|120,12|
+2|acc#22|an#22|cpc#22|22|2200|220,2|220,5|8800,039999999999|880,1200000000001|
+1|acc#1|an#1|cpc#1|10|100|10,1|10,5|400,04|40,120000000000005|
