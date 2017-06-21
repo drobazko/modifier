@@ -2,7 +2,7 @@ require './lib/workspace_handler'
 
 describe WorkspaceHandler do
   let(:file_name_template) { 'project_2012-07-27_*_performancedata.txt' }
-  let(:base_folder) { "#{Dir.pwd}/spec/data" }
+  let(:base_folder) { "#{Dir.pwd}/spec/workspace" }
   subject { WorkspaceHandler.new(file_name_template, base_folder).latest_file }
 
   context "#latest_file" do

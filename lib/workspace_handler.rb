@@ -4,7 +4,7 @@ require 'date'
 class WorkspaceHandler
   DEFAULT_CSV_OPTIONS = { col_sep: '|', headers: :first_row }
   LINES_PER_FILE = 120000
-  BASE_FOLDER = "#{Dir.pwd}/data"
+  BASE_FOLDER = "#{Dir.pwd}/workspace"
 
   attr_reader :file_path
 
